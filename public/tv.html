@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UTCCNJ VBS Games</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, #1a2a6c, #2c3e91 40%, #1a2a6c);
+    color: white;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .scorebar {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    padding: 18px 10px 6px;
+  }
+  .score-chip {
+    padding: 10px 26px;
+    border-radius: 40px;
+    font-size: 1.6vw;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px 6vw;
+    min-height: 0;
+  }
+  .badge {
+    font-size: 1.6vw;
+    opacity: 0.75;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .question {
+    font-size: 4.2vw;
+    font-weight: 800;
+    line-height: 1.25;
+    max-width: 1100px;
+    text-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  .answer {
+    margin-top: 30px;
+    font-size: 3vw;
+    font-weight: 700;
+    color: #ffe27a;
+    text-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  .lobby-title {
+    font-size: 5vw;
+    font-weight: 900;
+  }
+  .lobby-sub {
+    font-size: 1.8vw;
+    opacity: 0.85;
+    margin-top: 14px;
+  }
+  .qr-wrap {
+    margin-top: 24px;
+    background: white;
+    padding: 24px;
+    border-radius: 20px;
+    display: inline-block;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+  }
+  .qr-wrap img {
+    display: block;
+    /* ~3x the old size (was 14vw/220px/130px), bounded by vh as well as vw
+       so it still scales down safely on a shorter viewport instead of
+       overflowing off-screen alongside the title/subtitle text around it
+       (body is overflow:hidden - same lesson as the Pictionary canvas). */
+    width: min(42vw, 48vh, 660px);
+    min-width: 200px;
+  }
+  .buzzwrap {
+    margin-top: 40px;
+    width: 100%;
+    max-width: 900px;
+  }
+  .buzzitem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.08);
+    border-left: 10px solid #888;
+    border-radius: 10px;
+    padding: 12px 22px;
+    margin-bottom: 10px;
+    font-size: 2vw;
+    animation: pop 0.25s ease;
+  }
+  .buzzitem.first {
+    background: rgba(255, 226, 122, 0.18);
+    border-left-color: #ffe27a;
+    font-weight: 900;
+    font-size: 2.4vw;
+  }
+  @keyframes pop {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 1.4vw;
+    opacity: 0.7;
+  }
+  .gameover { font-size: 5vw; font-weight: 900; }
+  .message {
+    margin-top: 20px;
+    font-size: 2vw;
+    color: #a7ffb0;
+  }
+  .brand {
+    position: fixed;
+    top: 16px;
+    left: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.1);
+    padding: 6px 16px;
+    border-radius: 30px;
+    border: 2px solid #ffe27a;
+    z-index: 20;
+  }
+  .brand img {
+    height: 3.2vw;
+    min-height: 40px;
+    max-height: 60px;
+    display: block;
+  }
+  .timer {
+    position: fixed;
+    top: 14px;
+    right: 18px;
+    width: 6vw;
+    height: 6vw;
+    min-width: 70px;
+    min-height: 70px;
+    border-radius: 50%;
+    border: 6px solid #4caf50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.6vw;
+    font-weight: 900;
+    background: rgba(0,0,0,0.35);
+    z-index: 20;
+    transition: border-color 0.3s;
+  }
+  .timer.warn { border-color: #f2b705; }
+  .timer.danger {
+    border-color: #e63946;
+    animation: pulse 0.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+  }
+  .sound-gate {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 12, 40, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 50;
+    cursor: pointer;
+    text-align: center;
+  }
+  .sound-gate div { font-size: 2vw; font-weight: 800; }
+  .sound-gate small { font-size: 1.2vw; opacity: 0.75; }
+  /* #pictionaryRound's height:100% needs its parent to have a *definite*
+     height for the percentage to resolve - #pictionaryView (like all the
+     other top-level view containers) has no height of its own by default
+     (.main only centers items via justify-content, it doesn't stretch
+     them), so #pictionaryView must explicitly fill .main first. */
+  #pictionaryView {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 0;
+  }
+  #pictionaryRound {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .canvas-wrap {
+    background: white;
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Grow to fill essentially all leftover vertical space below the
+       compact 2-line header (drawer banner + category) - min-height:0 is
+       required for a flex child to actually shrink/grow properly inside a
+       flex column instead of overflowing based on content size. */
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    max-width: 97vw;
+  }
+  .canvas-wrap canvas {
+    display: block;
+    /* Scale up as large as the box allows while keeping the drawing's true
+       4:3 shape (matches the canvas's actual 800x600 drawing buffer) - avoids
+       stretching/distorting what was drawn. */
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    aspect-ratio: 4/3;
+  }
+  .drawer-banner {
+    font-size: 2vw;
+    font-weight: 800;
+    margin: 6px 0 2px;
+    flex: 0 0 auto;
+  }
+  .picty-category {
+    font-size: 1.4vw;
+    opacity: 0.75;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    flex: 0 0 auto;
+  }
+  /* Same fix as the Pictionary canvas: #versefadeView needs an explicit
+     width/height and to be a flex container itself, otherwise it just
+     shrink-wraps its content in the middle of .main instead of filling the
+     screen (.main's align-items/justify-content center a child, they don't
+     stretch it). */
+  #versefadeView {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+  .verse-tv {
+    font-weight: 700;
+    line-height: 1.5;
+    max-width: 94vw;
+    text-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  .verse-tv .blank {
+    color: #ffe27a;
+    letter-spacing: 2px;
+  }
+  /* !important so this always wins regardless of a component's own display
+     rule and regardless of stylesheet order (bit us once already below). */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="brand"><img src="/images/Utccnj_logo.png" alt="UTCCNJ"></div>
+  <div class="timer" id="timer"></div>
+  <div class="sound-gate" id="soundGate">
+    <div>🔊 Tap anywhere to enable sound</div>
+    <small>(needed once so the countdown music can play)</small>
+  </div>
+  <div class="scorebar" id="scorebar"></div>
+  <div class="main" id="main">
+
+    <div id="idleView">
+      <div class="lobby-title">🎉 Welcome to UTCCNJ VBS Games! 🎉</div>
+      <div class="lobby-sub">Waiting for the host to choose a game...</div>
+    </div>
+
+    <div id="triviaView" class="hidden"></div>
+
+    <div id="pictionaryView" class="hidden">
+      <div id="pictionaryLobby" class="hidden"></div>
+      <div id="pictionaryRound" class="hidden">
+        <div class="drawer-banner" id="pDrawerBanner"></div>
+        <div class="picty-category" id="pCatBadge"></div>
+        <div class="canvas-wrap"><canvas id="pictyTvCanvas" width="800" height="600"></canvas></div>
+        <div class="answer hidden" id="pAnswerReveal" style="flex: 0 0 auto; margin-top: 6px;"></div>
+        <div class="message hidden" id="pMessageEl" style="flex: 0 0 auto;"></div>
+      </div>
+    </div>
+
+    <div id="versefadeView" class="hidden"></div>
+
+  </div>
+  <div class="footer" id="footer"></div>
+
+<script>
+const TEAMCOLORS = {};
+
+// ---------- Sound unlock ----------
+let audioCtx = null;
+document.getElementById('soundGate').addEventListener('click', () => {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  document.getElementById('soundGate').style.display = 'none';
+});
+
+// ---------- Countdown timer + tension music (generic - works for any active game's timer) ----------
+let currentEndsAt = null;
+let tickTimeoutId = null;
+let alarmPlayed = false;
+
+function getRemainingSeconds() {
+  if (!currentEndsAt) return null;
+  return Math.max(0, (currentEndsAt - Date.now()) / 1000);
+}
+
+function renderTimer() {
+  const el = document.getElementById('timer');
+  const remaining = getRemainingSeconds();
+  if (remaining === null) {
+    el.style.display = 'none';
+  } else {
+    el.style.display = 'flex';
+    el.textContent = Math.ceil(remaining);
+    el.classList.toggle('warn', remaining <= 15 && remaining > 5);
+    el.classList.toggle('danger', remaining <= 5);
+  }
+  requestAnimationFrame(renderTimer);
+}
+
+function playTick(urgency) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'square';
+  osc.frequency.value = 220 + urgency * 380;
+  gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.09);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.1);
+}
+
+function playTimeUpAlarm() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 1.1);
+  gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1.2);
+}
+
+function scheduleTick() {
+  clearTimeout(tickTimeoutId);
+  const remaining = getRemainingSeconds();
+  if (remaining === null) return;
+  if (remaining <= 0) {
+    if (!alarmPlayed) {
+      playTimeUpAlarm();
+      alarmPlayed = true;
+    }
+    return;
+  }
+  const urgency = 1 - Math.min(remaining, 30) / 30;
+  playTick(urgency);
+  const interval = remaining < 8 ? 220 : remaining < 18 ? 400 : 650;
+  tickTimeoutId = setTimeout(scheduleTick, interval);
+}
+
+function syncTimer(endsAt) {
+  if (endsAt !== currentEndsAt) {
+    currentEndsAt = endsAt;
+    alarmPlayed = false;
+    clearTimeout(tickTimeoutId);
+    if (currentEndsAt) scheduleTick();
+  }
+}
+
+// ---------- Pictionary canvas (delta-polled from /api/pictionary/strokes) ----------
+let pKnownRoundId = null;
+let pLastSeq = 0;
+let pStrokePaths = {};
+let pCanvasEl = null;
+let pCtx = null;
+
+function clearPictionaryCanvas() {
+  if (!pCtx) return;
+  pCtx.clearRect(0, 0, pCanvasEl.width, pCanvasEl.height);
+  pStrokePaths = {};
+}
+
+async function pollPictionaryStrokes() {
+  try {
+    const res = await fetch(`/api/pictionary/strokes?since=${pLastSeq}`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.roundId !== pKnownRoundId) {
+      pKnownRoundId = data.roundId;
+      pLastSeq = 0;
+      clearPictionaryCanvas();
+      setTimeout(pollPictionaryStrokes, 0);
+      return;
+    }
+    if (pCtx) {
+      if (data.truncated) clearPictionaryCanvas();
+      for (const e of data.events) {
+        if (e.end) { delete pStrokePaths[e.strokeId]; continue; }
+        const x = e.x * pCanvasEl.width;
+        const y = e.y * pCanvasEl.height;
+        const last = pStrokePaths[e.strokeId];
+        pCtx.strokeStyle = '#1a2a6c';
+        pCtx.lineWidth = 5;
+        pCtx.lineCap = 'round';
+        pCtx.beginPath();
+        pCtx.moveTo(last ? last.x : x, last ? last.y : y);
+        pCtx.lineTo(x, y);
+        pCtx.stroke();
+        pStrokePaths[e.strokeId] = { x, y };
+      }
+    }
+    pLastSeq = data.latestSeq;
+  } catch (e) {}
+  setTimeout(pollPictionaryStrokes, 700);
+}
+pollPictionaryStrokes();
+
+// ---------- Main render ----------
+async function poll() {
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    const s = await res.json();
+    render(s);
+  } catch (e) {
+    console.error('TV poll/render error:', e);
+  }
+  setTimeout(poll, 700);
+}
+
+function render(s) {
+  s.trivia.teams.forEach(t => TEAMCOLORS[t.id] = t.color);
+
+  document.getElementById('idleView').classList.toggle('hidden', s.activeGame !== null);
+  document.getElementById('triviaView').classList.toggle('hidden', s.activeGame !== 'trivia');
+  document.getElementById('pictionaryView').classList.toggle('hidden', s.activeGame !== 'pictionary');
+  document.getElementById('versefadeView').classList.toggle('hidden', s.activeGame !== 'versefade');
+
+  if (s.activeGame === 'trivia') {
+    syncTimer(s.trivia.phase === 'question' ? s.trivia.timerEndsAt : null);
+    renderTriviaScorebar(s.trivia);
+    renderTrivia(s.trivia);
+  } else if (s.activeGame === 'pictionary') {
+    syncTimer(null); // no timer in Pictionary - draw for as long as the host lets you
+    document.getElementById('scorebar').innerHTML = ''; // no scoring in Pictionary - shout for fun only
+    renderPictionary(s.pictionary);
+  } else if (s.activeGame === 'versefade') {
+    syncTimer(null);
+    document.getElementById('scorebar').innerHTML = '';
+    renderVersefade(s.versefade);
+  } else {
+    syncTimer(null);
+    document.getElementById('scorebar').innerHTML = '';
+    document.getElementById('footer').textContent = '';
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Diminishing Words - no persistent DOM state to preserve (no canvas), so a
+// full innerHTML swap each poll is fine here, same as Trivia.
+function renderVersefade(s) {
+  const view = document.getElementById('versefadeView');
+  const footer = document.getElementById('footer');
+
+  if (!s.hasVerse) {
+    view.innerHTML = `
+      <div class="lobby-title">📖 Diminishing Words 📖</div>
+      <div class="lobby-sub">Waiting for the host to paste a Bible verse...</div>`;
+    footer.textContent = '';
+    return;
+  }
+
+  const verseHtml = s.tokens.map(t => {
+    if (!t.isWord) return escapeHtml(t.text).replace(/\n/g, '<br>');
+    if (t.erased) return `<span class="blank">${'_'.repeat(Math.max(t.length, 2))}</span>`;
+    return escapeHtml(t.text);
+  }).join('');
+
+  // Bigger text for shorter verses, scaled down for longer ones so a long
+  // passage still fits on screen instead of overflowing (body is
+  // overflow:hidden, so anything that didn't fit would just be invisible,
+  // not scrollable - same lesson as the Pictionary canvas sizing bug).
+  const charCount = s.tokens.reduce((sum, t) => sum + (t.isWord ? (t.erased ? t.length : t.text.length) : 0), 0);
+  let fontVw;
+  if (charCount < 60) fontVw = 7.5;
+  else if (charCount < 120) fontVw = 5.5;
+  else if (charCount < 220) fontVw = 4;
+  else fontVw = 3;
+
+  view.innerHTML = `<div class="verse-tv" style="font-size:${fontVw}vw">${verseHtml}</div>`;
+  footer.textContent = 'Read the verse aloud together!';
+}
+
+function renderTriviaScorebar(g) {
+  const sb = document.getElementById('scorebar');
+  sb.innerHTML = g.teams.map(t =>
+    `<div class="score-chip" style="background:${t.color}">${t.name}: ${g.scores[t.id]}</div>`
+  ).join('');
+}
+
+// Trivia has no persistent DOM state (no canvas), so a full innerHTML swap
+// each poll is fine here.
+function renderTrivia(s) {
+  const view = document.getElementById('triviaView');
+  const footer = document.getElementById('footer');
+
+  if (s.phase === 'lobby') {
+    view.innerHTML = `
+      <div class="lobby-title">🎉 Bible Trivia! 🎉</div>
+      <div class="lobby-sub">Join at <b>${location.host}/play</b> on your phone</div>
+      <div class="qr-wrap"><img src="/qr.svg" alt="Scan to join"></div>
+      <div class="lobby-sub">${s.playerCount} player(s) joined</div>`;
+    footer.textContent = '';
+    return;
+  }
+
+  if (s.phase === 'gameover') {
+    let winner = s.teams.slice().sort((a, b) => s.scores[b.id] - s.scores[a.id])[0];
+    view.innerHTML = `<div class="gameover">🏆 Game Over! 🏆</div>
+      <div class="lobby-sub" style="font-size:2.5vw; margin-top:20px; color:${winner.color}">
+        ${winner.name} Team Wins!
+      </div>`;
+    footer.textContent = '';
+    return;
+  }
+
+  const q = s.question;
+  let buzzHtml = '';
+  if (s.buzzQueue.length) {
+    buzzHtml = '<div class="buzzwrap">' + s.buzzQueue.map((b, i) => `
+      <div class="buzzitem ${i === 0 ? 'first' : ''}" style="border-left-color:${TEAMCOLORS[b.team] || '#888'}">
+        <span>${i === 0 ? '🔔 ' : ''}${b.name} <small style="opacity:0.7">(${b.team})</small></span>
+        <span>#${i + 1}</span>
+      </div>`).join('') + '</div>';
+  }
+
+  view.innerHTML = `
+    <div class="badge">Question ${s.questionIndex + 1} of ${s.totalQuestions} ${q && q.category ? '• ' + q.category : ''}</div>
+    <div class="question">${q ? q.text : ''}</div>
+    ${s.phase === 'revealed' && s.answer ? `<div class="answer">✅ ${s.answer}</div>` : ''}
+    ${buzzHtml}
+    ${s.message ? `<div class="message">${s.message}</div>` : ''}
+  `;
+  footer.textContent = s.phase === 'question' ? 'Buzz in on your phone!' : '';
+}
+
+// Pictionary's canvas must never be recreated by an innerHTML swap (that
+// would wipe the drawing every poll), so this toggles between two static
+// sub-views and only updates text content within the round view.
+function renderPictionary(s) {
+  const footer = document.getElementById('footer');
+  const lobbyEl = document.getElementById('pictionaryLobby');
+  const roundEl = document.getElementById('pictionaryRound');
+
+  if (s.phase === 'lobby') {
+    lobbyEl.classList.remove('hidden');
+    roundEl.classList.add('hidden');
+    lobbyEl.innerHTML = `
+      <div class="lobby-title">🎨 Pictionary! 🎨</div>
+      <div class="lobby-sub">Join at <b>${location.host}/play</b> on your phone</div>
+      <div class="qr-wrap"><img src="/qr.svg" alt="Scan to join"></div>
+      <div class="lobby-sub">${s.playerCount} player(s) joined</div>`;
+    footer.textContent = '';
+    pCanvasEl = null;
+    pCtx = null;
+    return;
+  }
+
+  lobbyEl.classList.add('hidden');
+  roundEl.classList.remove('hidden');
+
+  document.getElementById('pDrawerBanner').textContent = s.drawerName ? `🎨 ${s.drawerName} is drawing!` : 'Waiting for a drawer...';
+  document.getElementById('pCatBadge').textContent = `${s.category || ''} ${s.difficulty ? '• ' + s.difficulty : ''}`;
+
+  const answerEl = document.getElementById('pAnswerReveal');
+  if (s.phase === 'revealed' && s.word) {
+    answerEl.textContent = '✅ ' + s.word;
+    answerEl.classList.remove('hidden');
+  } else {
+    answerEl.classList.add('hidden');
+  }
+
+  const msgEl = document.getElementById('pMessageEl');
+  if (s.message) {
+    msgEl.textContent = s.message;
+    msgEl.classList.remove('hidden');
+  } else {
+    msgEl.classList.add('hidden');
+  }
+
+  footer.textContent = s.phase === 'round' ? 'Shout your guess!' : '';
+
+  if (!pCanvasEl) {
+    pCanvasEl = document.getElementById('pictyTvCanvas');
+    pCtx = pCanvasEl.getContext('2d');
+    pStrokePaths = {};
+    pLastSeq = 0;
+    pKnownRoundId = null;
+  }
+}
+
+poll();
+renderTimer();
+</script>
+</body>
+</html>

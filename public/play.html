@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Join UTCCNJ VBS Games</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, #1a2a6c, #2c3e91 60%, #1a2a6c);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+  h1 { font-size: 1.7rem; margin-bottom: 4px; }
+  h2 { font-size: 1.5rem; margin-bottom: 4px; }
+  p.sub { opacity: 0.8; margin-top: 0; }
+  input {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    border: none;
+    margin: 10px 0;
+    text-align: center;
+  }
+  .teams {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .team-btn {
+    padding: 16px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: white;
+    cursor: pointer;
+  }
+  .team-btn.selected { border-color: white; transform: scale(1.03); }
+  #joinBtn, #buzzBtn {
+    width: 100%;
+    padding: 20px;
+    font-size: 1.3rem;
+    font-weight: 900;
+    border: none;
+    border-radius: 16px;
+    margin-top: 14px;
+    cursor: pointer;
+  }
+  #joinBtn { background: #ffe27a; color: #1a2a6c; }
+  #buzzBtn {
+    background: #e63946;
+    color: white;
+    font-size: 2.2rem;
+    padding: 60px 20px;
+    box-shadow: 0 8px 0 #9e1f28;
+  }
+  #buzzBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #9e1f28; }
+  #buzzBtn:disabled { background: #666; box-shadow: 0 8px 0 #333; cursor: default; }
+  #status { margin-top: 20px; font-size: 1.2rem; min-height: 30px; }
+  .hidden { display: none !important; }
+  .badge { font-size: 1rem; opacity: 0.8; }
+  .brand { margin-bottom: 10px; }
+  .brand img { height: 44px; }
+  .timer { font-size: 2.4rem; font-weight: 900; margin: 6px 0; }
+  .switch-link {
+    background: none;
+    border: none;
+    color: white;
+    opacity: 0.7;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    padding: 10px;
+    cursor: pointer;
+  }
+  .draw-canvas {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: white;
+    border-radius: 12px;
+    touch-action: none;
+    margin: 10px 0;
+  }
+  .word-box {
+    background: rgba(255,255,255,0.12);
+    border-radius: 12px;
+    padding: 10px;
+    margin: 10px 0;
+  }
+  .word-box .word { font-size: 1.5rem; font-weight: 900; color: #ffe27a; }
+  #clearCanvasBtn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: #3a3f7a;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .guess-prompt { font-size: 1.4rem; font-weight: 800; margin: 20px 0; }
+  .verse-play {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.9;
+    text-align: left;
+    margin-top: 10px;
+  }
+  .verse-play .blank { color: #ffe27a; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="brand"><img src="/images/Utccnj_logo.png" alt="UTCCNJ"></div>
+
+  <div id="idleView">
+    <h1>👋 UTCCNJ VBS Games</h1>
+    <p class="sub">Waiting for the host to start a game...</p>
+  </div>
+
+  <div id="joinView" class="hidden">
+    <h2 id="joinGameTitle">Join</h2>
+    <p class="sub" id="joinSubtext">Enter your name and pick your team</p>
+    <input id="nameInput" maxlength="20" placeholder="Your name">
+    <div class="teams hidden" id="teamButtons"></div>
+    <button id="joinBtn">Let's Go! 🚀</button>
+  </div>
+
+  <div id="triviaPlayView" class="hidden">
+    <div class="badge" id="triviaWhoami"></div>
+    <div class="timer hidden" id="triviaTimer"></div>
+    <button id="buzzBtn" disabled>WAIT...</button>
+    <div id="status"></div>
+    <button id="triviaSwitchBtn" class="switch-link">Not you? Switch player</button>
+  </div>
+
+  <div id="pictionaryPlayView" class="hidden">
+    <div id="pLobbyWait" class="hidden">
+      <p class="sub">Waiting for the host to start a round...</p>
+    </div>
+    <div id="pDrawerView" class="hidden">
+      <div class="word-box">
+        <div class="badge" id="pMyCategory"></div>
+        <div class="word" id="pMyWord">(waiting...)</div>
+      </div>
+      <canvas id="drawCanvas" class="draw-canvas" width="480" height="360"></canvas>
+      <button id="clearCanvasBtn">🧹 Clear My Drawing</button>
+    </div>
+    <div id="pGuesserView" class="hidden">
+      <div class="guess-prompt">👀 <span id="pDrawerNameText">Someone</span> is drawing!<br>Shout your guess out loud!</div>
+    </div>
+    <button id="pictSwitchBtn" class="switch-link">Not you? Switch player</button>
+  </div>
+
+  <div id="versefadePlayView" class="hidden">
+    <h1>📖 Diminishing Words</h1>
+    <div class="verse-play" id="versePlayText"></div>
+  </div>
+
+</div>
+
+<script>
+let currentGame = null; // 'trivia' | 'pictionary' | null - mirrors state.activeGame
+let joinScreenRenderedForGame = undefined; // forces a one-time rebuild of the join screen per game/switch
+let selectedTeam = null;
+let TEAMS = [];
+
+const joinState = {
+  trivia: {
+    playerId: localStorage.getItem('vbs_trivia_player_id'),
+    playerName: localStorage.getItem('vbs_trivia_player_name'),
+    playerTeam: localStorage.getItem('vbs_trivia_player_team')
+  },
+  pictionary: {
+    playerId: localStorage.getItem('vbs_pictionary_player_id'),
+    playerName: localStorage.getItem('vbs_pictionary_player_name')
+  }
+};
+
+let joinedAndVisible = false;
+let hasBuzzedThisQuestion = false;
+let lastQuestionIndex = null;
+
+async function validatePlayer(game, id) {
+  try {
+    const res = await fetch(`/api/validate?id=${encodeURIComponent(id)}&game=${game}`, { cache: 'no-store' });
+    const data = await res.json();
+    return !!data.valid;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function doJoin(game, name, team, silent) {
+  const res = await fetch('/api/join', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ game, name, team })
+  });
+  const data = await res.json();
+  joinState[game].playerId = data.id;
+  joinState[game].playerName = data.name;
+  joinState[game].playerTeam = data.team || null;
+  localStorage.setItem(`vbs_${game}_player_id`, data.id);
+  localStorage.setItem(`vbs_${game}_player_name`, data.name);
+  if (data.team) {
+    localStorage.setItem(`vbs_${game}_player_team`, data.team);
+  } else {
+    localStorage.removeItem(`vbs_${game}_player_team`);
+  }
+}
+
+function showJoinScreen() {
+  document.getElementById('idleView').classList.add('hidden');
+  document.getElementById('joinView').classList.remove('hidden');
+  if (joinScreenRenderedForGame === currentGame) return;
+  joinScreenRenderedForGame = currentGame;
+  selectedTeam = null;
+  document.getElementById('nameInput').value = '';
+  const needsTeam = currentGame === 'trivia';
+  document.getElementById('joinGameTitle').textContent = needsTeam ? '👋 Join Bible Trivia' : '👋 Join Pictionary';
+  document.getElementById('joinSubtext').textContent = needsTeam ? 'Enter your name and pick your team' : 'Enter your name';
+  const teamButtons = document.getElementById('teamButtons');
+  teamButtons.classList.toggle('hidden', !needsTeam);
+  if (needsTeam) {
+    teamButtons.innerHTML = TEAMS.map(t =>
+      `<button class="team-btn" style="background:${t.color}" data-id="${t.id}">${t.name}</button>`
+    ).join('');
+    document.querySelectorAll('.team-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.team-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedTeam = btn.dataset.id;
+      };
+    });
+  } else {
+    teamButtons.innerHTML = '';
+  }
+}
+
+document.getElementById('joinBtn').onclick = async () => {
+  const name = document.getElementById('nameInput').value.trim() || 'Player';
+  if (currentGame === 'trivia' && !selectedTeam) { alert('Pick a team first!'); return; }
+  await doJoin(currentGame, name, currentGame === 'trivia' ? selectedTeam : null, false);
+  joinedAndVisible = true;
+  document.getElementById('joinView').classList.add('hidden');
+  document.getElementById(currentGame === 'trivia' ? 'triviaPlayView' : 'pictionaryPlayView').classList.remove('hidden');
+};
+
+function switchPlayer(game) {
+  localStorage.removeItem(`vbs_${game}_player_id`);
+  localStorage.removeItem(`vbs_${game}_player_name`);
+  localStorage.removeItem(`vbs_${game}_player_team`);
+  joinState[game] = { playerId: null, playerName: null, playerTeam: null };
+  joinedAndVisible = false;
+  joinScreenRenderedForGame = null;
+  document.getElementById('triviaPlayView').classList.add('hidden');
+  document.getElementById('pictionaryPlayView').classList.add('hidden');
+}
+document.getElementById('triviaSwitchBtn').onclick = () => switchPlayer('trivia');
+document.getElementById('pictSwitchBtn').onclick = () => switchPlayer('pictionary');
+
+// ---------- Trivia play view ----------
+document.getElementById('buzzBtn').onclick = async () => {
+  const btn = document.getElementById('buzzBtn');
+  btn.disabled = true;
+  btn.textContent = 'BUZZED!';
+  if (navigator.vibrate) navigator.vibrate(80);
+  const result = await sendBuzz();
+  if (result === 'unknown_player') {
+    const js = joinState.trivia;
+    if (js.playerName && js.playerTeam) {
+      await doJoin('trivia', js.playerName, js.playerTeam, true);
+      await sendBuzz();
+    } else {
+      btn.textContent = 'TAP TO REJOIN';
+      btn.disabled = false;
+      document.getElementById('status').textContent = 'Connection reset - tap the button again.';
+      btn.onclick = () => location.reload();
+    }
+  }
+};
+
+async function sendBuzz() {
+  try {
+    const res = await fetch('/api/buzz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: joinState.trivia.playerId })
+    });
+    if (res.status === 400) return 'unknown_player';
+    const data = await res.json();
+    if (data.ok === false) return 'closed';
+    return 'ok';
+  } catch (e) {
+    return 'error';
+  }
+}
+
+function updateTriviaPlayView(t) {
+  const btn = document.getElementById('buzzBtn');
+  const status = document.getElementById('status');
+  const timerEl = document.getElementById('triviaTimer');
+  const playerId = joinState.trivia.playerId;
+
+  document.getElementById('triviaWhoami').textContent = `Playing as ${joinState.trivia.playerName} (${joinState.trivia.playerTeam} team)`;
+
+  if (t.questionIndex !== lastQuestionIndex) {
+    lastQuestionIndex = t.questionIndex;
+    hasBuzzedThisQuestion = false;
+  }
+  const alreadyBuzzed = t.buzzQueue.find(b => b.playerId === playerId);
+  if (alreadyBuzzed) hasBuzzedThisQuestion = true;
+
+  if (t.phase === 'question' && t.timerEndsAt) {
+    timerEl.classList.remove('hidden');
+    timerEl.textContent = '⏱ ' + Math.max(0, Math.ceil((t.timerEndsAt - Date.now()) / 1000)) + 's';
+  } else {
+    timerEl.classList.add('hidden');
+  }
+
+  if (t.phase === 'lobby') {
+    btn.disabled = true;
+    btn.textContent = 'WAITING TO START...';
+    status.textContent = '';
+  } else if (t.phase === 'gameover') {
+    btn.disabled = true;
+    btn.textContent = 'GAME OVER 🏆';
+    status.textContent = '';
+  } else if (t.phase === 'question') {
+    if (hasBuzzedThisQuestion) {
+      btn.disabled = true;
+      btn.textContent = 'BUZZED!';
+      const idx = t.buzzQueue.findIndex(b => b.playerId === playerId);
+      status.textContent = idx === 0 ? "🔔 You're first! Get ready to answer out loud." : `You're #${idx + 1} in line.`;
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'BUZZ! 🔔';
+      status.textContent = '';
+    }
+  } else if (t.phase === 'revealed') {
+    btn.disabled = true;
+    btn.textContent = 'ANSWER REVEALED';
+    status.textContent = 'Watch the TV!';
+  }
+}
+
+// ---------- Pictionary play view ----------
+let pDrawCanvas = null;
+let pDrawCtx = null;
+let currentStrokeId = null;
+let pointBuffer = [];
+let lastPoint = null;
+let lastRoundIdSeen = null;
+let myWordCache = { roundId: null, word: null };
+
+function initDrawCanvas() {
+  pDrawCanvas = document.getElementById('drawCanvas');
+  pDrawCtx = pDrawCanvas.getContext('2d');
+  let drawing = false;
+
+  function getPos(e) {
+    const rect = pDrawCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: (clientX - rect.left) / rect.width, y: (clientY - rect.top) / rect.height };
+  }
+
+  function drawLocalSegment(from, to) {
+    pDrawCtx.strokeStyle = '#1a2a6c';
+    pDrawCtx.lineWidth = 5;
+    pDrawCtx.lineCap = 'round';
+    pDrawCtx.beginPath();
+    pDrawCtx.moveTo(from.x * pDrawCanvas.width, from.y * pDrawCanvas.height);
+    pDrawCtx.lineTo(to.x * pDrawCanvas.width, to.y * pDrawCanvas.height);
+    pDrawCtx.stroke();
+  }
+
+  pDrawCanvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    drawing = true;
+    currentStrokeId = 'st' + Date.now() + Math.random().toString(36).slice(2, 6);
+    lastPoint = getPos(e);
+    pointBuffer.push(lastPoint);
+  });
+  pDrawCanvas.addEventListener('pointermove', (e) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    const dx = p.x - lastPoint.x, dy = p.y - lastPoint.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 0.006) return; // thin points - skip tiny movements
+    drawLocalSegment(lastPoint, p);
+    pointBuffer.push(p);
+    lastPoint = p;
+  });
+  const endStroke = () => {
+    if (!drawing) return;
+    drawing = false;
+    flushPoints(true);
+  };
+  window.addEventListener('pointerup', endStroke);
+  window.addEventListener('pointercancel', endStroke);
+
+  setInterval(() => flushPoints(false), 130);
+}
+
+async function flushPoints(done) {
+  if (!currentStrokeId) return;
+  if (!pointBuffer.length && !done) return;
+  const points = pointBuffer.splice(0, pointBuffer.length);
+  const strokeId = currentStrokeId;
+  if (done) currentStrokeId = null;
+  try {
+    const res = await fetch('/api/pictionary/draw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: joinState.pictionary.playerId, strokeId, points, roundId: lastRoundIdSeen, done })
+    });
+    const data = await res.json();
+    if (data.error === 'not_joined') {
+      const js = joinState.pictionary;
+      if (js.playerName) await doJoin('pictionary', js.playerName, null, true);
+    }
+  } catch (e) {}
+}
+
+document.getElementById('clearCanvasBtn').onclick = async () => {
+  if (pDrawCtx) pDrawCtx.clearRect(0, 0, pDrawCanvas.width, pDrawCanvas.height);
+  try {
+    await fetch('/api/pictionary/clear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: joinState.pictionary.playerId })
+    });
+  } catch (e) {}
+};
+
+async function updatePictionaryPlayView(p) {
+  const playerId = joinState.pictionary.playerId;
+  const isDrawer = p.phase !== 'lobby' && p.drawerId === playerId;
+  lastRoundIdSeen = p.roundId;
+
+  document.getElementById('pLobbyWait').classList.toggle('hidden', p.phase !== 'lobby');
+  document.getElementById('pDrawerView').classList.toggle('hidden', p.phase === 'lobby' || !isDrawer);
+  document.getElementById('pGuesserView').classList.toggle('hidden', p.phase === 'lobby' || isDrawer);
+
+  if (p.phase === 'lobby') return;
+
+  if (isDrawer) {
+    if (!pDrawCanvas) initDrawCanvas();
+    if (myWordCache.roundId !== p.roundId) {
+      myWordCache.roundId = p.roundId;
+      myWordCache.word = null;
+      if (pDrawCtx) pDrawCtx.clearRect(0, 0, pDrawCanvas.width, pDrawCanvas.height);
+      try {
+        const res = await fetch(`/api/pictionary/my-word?id=${encodeURIComponent(playerId)}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (data.error === 'not_joined') {
+          const js = joinState.pictionary;
+          if (js.playerName) await doJoin('pictionary', js.playerName, null, true);
+        } else {
+          myWordCache.word = data.word || null;
+        }
+      } catch (e) {}
+    }
+    document.getElementById('pMyWord').textContent = myWordCache.word || '(waiting...)';
+    document.getElementById('pMyCategory').textContent = `${p.category || ''} ${p.difficulty ? '• ' + p.difficulty : ''}`;
+  } else {
+    document.getElementById('pDrawerNameText').textContent = p.drawerName || 'Someone';
+  }
+}
+
+// ---------- Main poll loop ----------
+async function poll() {
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    const s = await res.json();
+    await handleState(s);
+  } catch (e) {}
+  setTimeout(poll, 700);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Diminishing Words has no per-player join step - kids just watch, nothing
+// to tap - so this is rendered directly with no name/team screen at all.
+function renderVersefadePlayView(s) {
+  const view = document.getElementById('versePlayText');
+  if (!s.hasVerse) {
+    view.innerHTML = '<p class="sub">Waiting for the host to paste a Bible verse...</p>';
+    return;
+  }
+  view.innerHTML = s.tokens.map(t => {
+    if (!t.isWord) return escapeHtml(t.text).replace(/\n/g, '<br>');
+    if (t.erased) return `<span class="blank">${'_'.repeat(Math.max(t.length, 2))}</span>`;
+    return escapeHtml(t.text);
+  }).join('');
+}
+
+async function handleState(s) {
+  TEAMS = s.trivia.teams;
+
+  if (s.activeGame !== currentGame) {
+    currentGame = s.activeGame;
+    joinedAndVisible = false;
+  }
+
+  if (currentGame === 'versefade') {
+    document.getElementById('idleView').classList.add('hidden');
+    document.getElementById('joinView').classList.add('hidden');
+    document.getElementById('triviaPlayView').classList.add('hidden');
+    document.getElementById('pictionaryPlayView').classList.add('hidden');
+    document.getElementById('versefadePlayView').classList.remove('hidden');
+    renderVersefadePlayView(s.versefade);
+    return;
+  }
+  document.getElementById('versefadePlayView').classList.add('hidden');
+
+  if (currentGame === null) {
+    document.getElementById('idleView').classList.remove('hidden');
+    document.getElementById('joinView').classList.add('hidden');
+    document.getElementById('triviaPlayView').classList.add('hidden');
+    document.getElementById('pictionaryPlayView').classList.add('hidden');
+    return;
+  }
+
+  const js = joinState[currentGame];
+  if (!js.playerId) {
+    document.getElementById('triviaPlayView').classList.add('hidden');
+    document.getElementById('pictionaryPlayView').classList.add('hidden');
+    showJoinScreen();
+    return;
+  }
+
+  if (!joinedAndVisible) {
+    const valid = await validatePlayer(currentGame, js.playerId);
+    if (!valid) {
+      const canSilentRejoin = js.playerName && (currentGame !== 'trivia' || js.playerTeam);
+      if (canSilentRejoin) {
+        await doJoin(currentGame, js.playerName, currentGame === 'trivia' ? js.playerTeam : null, true);
+      } else {
+        localStorage.removeItem(`vbs_${currentGame}_player_id`);
+        js.playerId = null;
+        showJoinScreen();
+        return;
+      }
+    }
+    joinedAndVisible = true;
+  }
+
+  document.getElementById('idleView').classList.add('hidden');
+  document.getElementById('joinView').classList.add('hidden');
+
+  if (currentGame === 'trivia') {
+    document.getElementById('triviaPlayView').classList.remove('hidden');
+    document.getElementById('pictionaryPlayView').classList.add('hidden');
+    updateTriviaPlayView(s.trivia);
+  } else if (currentGame === 'pictionary') {
+    document.getElementById('pictionaryPlayView').classList.remove('hidden');
+    document.getElementById('triviaPlayView').classList.add('hidden');
+    await updatePictionaryPlayView(s.pictionary);
+  }
+}
+
+poll();
+</script>
+</body>
+</html>

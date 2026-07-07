@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>UTCCNJ VBS Games - Host Control Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #14162b;
+    color: white;
+    padding: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.3rem; display: flex; align-items: center; gap: 10px; }
+  h1 img { height: 34px; }
+  .panel {
+    background: #1f2245;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .qtext { font-size: 1.2rem; font-weight: bold; margin-bottom: 6px; }
+  .ans { color: #ffe27a; font-weight: bold; }
+  input[type="text"], textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 10px;
+    border: none;
+    background: #0f1130;
+    color: white;
+    margin-bottom: 6px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  button {
+    flex: 1;
+    min-width: 120px;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-primary { background: #ffe27a; color: #14162b; }
+  .btn-secondary { background: #3a3f7a; color: white; }
+  .btn-danger { background: #e63946; color: white; }
+  .teamgrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .teamcard {
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+  .teamcard .score { font-size: 1.6rem; font-weight: 900; margin: 6px 0; }
+  .teamcard .adjust { display: flex; gap: 6px; justify-content: center; }
+  .teamcard .adjust button {
+    flex: none;
+    width: 40px;
+    padding: 8px 0;
+    font-size: 1rem;
+    background: rgba(0,0,0,0.25);
+    color: white;
+  }
+  .buzzlist { margin-top: 10px; }
+  .buzzrow {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    margin-bottom: 6px;
+  }
+  .buzzrow.first { background: rgba(255,226,122,0.2); font-weight: bold; }
+  .status { font-size: 0.9rem; opacity: 0.75; margin-top: 4px; }
+  .linkbox {
+    font-size: 0.85rem;
+    background: #0f1130;
+    padding: 8px;
+    border-radius: 8px;
+    word-break: break-all;
+    margin-top: 6px;
+  }
+  /* !important: .resume-banner (and potentially other component classes)
+     set their own display value, which would otherwise win the cascade
+     over a same-specificity .hidden rule based on source order alone. */
+  .hidden { display: none !important; }
+  .game-picker { display: flex; gap: 10px; }
+  .game-card {
+    flex: 1;
+    padding: 16px 8px;
+    border-radius: 10px;
+    border: 2px solid #3a3f7a;
+    background: #14162b;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .game-card.active { border-color: #ffe27a; background: #3a3f7a; }
+  .resume-banner {
+    background: rgba(242,183,5,0.15);
+    border: 2px solid #f2b705;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.9rem;
+  }
+  .resume-banner button { flex: none; padding: 8px 14px; min-width: 0; }
+  .drawer-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .drawer-chip {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    background: #3a3f7a;
+  }
+  .drawer-chip.current { border-color: #ffe27a; background: #565da8; }
+  .drawer-chip.done { opacity: 0.55; }
+  .preview-canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: white;
+    border-radius: 10px;
+    margin: 10px 0;
+  }
+  .stale-note { font-size: 0.8rem; opacity: 0.7; margin-top: -4px; margin-bottom: 8px; }
+  .verse-display {
+    background: #0f1130;
+    border-radius: 10px;
+    padding: 14px;
+    margin: 10px 0;
+    line-height: 2.4;
+    font-size: 1.1rem;
+  }
+  .verse-token {
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 2px solid transparent;
+  }
+  .verse-token.selected { border-color: #ffe27a; background: rgba(255,226,122,0.2); }
+  .verse-token.erased { opacity: 0.5; text-decoration: line-through; background: rgba(230,57,70,0.15); }
+</style>
+</head>
+<body>
+  <h1><img src="/images/Utccnj_logo.png" alt="UTCCNJ"> VBS Games — 🎮 Host Control Panel</h1>
+  <div class="status" id="urls"></div>
+
+  <div class="panel">
+    <div class="qtext">Choose Game</div>
+    <div class="game-picker" id="gamePicker"></div>
+  </div>
+
+  <!-- Trivia panel -->
+  <div class="panel hidden" id="triviaHostPanel">
+    <div class="resume-banner hidden" id="triviaResumeBanner">
+      <span id="triviaResumeText"></span>
+      <button class="btn-primary" id="triviaResumeBtn">▶ Resume</button>
+    </div>
+    <div class="status">Question <span id="qnum">-</span> / <span id="qtotal">-</span> &nbsp; | &nbsp; Phase: <span id="phase">-</span> &nbsp; | &nbsp; Players: <span id="pcount">0</span> &nbsp; | &nbsp; ⏱ <span id="timer">-</span></div>
+    <div class="qtext" id="qtext">Press Start when everyone has joined.</div>
+    <div class="ans" id="qans"></div>
+    <div class="buzzlist" id="buzzlist"></div>
+
+    <div class="row">
+      <button class="btn-primary" id="startBtn">▶ Start Game</button>
+      <button class="btn-secondary" id="revealBtn">👁 Reveal Answer</button>
+    </div>
+    <div class="row">
+      <button class="btn-secondary" id="resetBuzzBtn">🔄 Reset Buzzers</button>
+      <button class="btn-primary" id="nextBtn">⏭ Next Question</button>
+    </div>
+    <div class="row">
+      <button class="btn-danger" id="resetGameBtn">⚠ Reset Whole Game</button>
+    </div>
+  </div>
+  <div class="panel hidden" id="triviaScorePanel">
+    <div class="qtext">Scores (tap +/- to award points)</div>
+    <div class="teamgrid" id="teamgrid"></div>
+  </div>
+
+  <!-- Pictionary panel -->
+  <div class="panel hidden" id="pictionaryHostPanel">
+    <div class="status">Phase: <span id="pPhase">-</span> &nbsp; | &nbsp; Players: <span id="pCount">0</span></div>
+    <div class="qtext">Category: <span id="pCategory">-</span> <small id="pDifficulty" style="opacity:0.7"></small></div>
+    <div class="ans" id="pWord"></div>
+    <div class="stale-note" id="pStaleNote"></div>
+
+    <div class="qtext" style="margin-top:10px">
+      Drawer: <span id="pDrawerName">None yet</span>
+      <button class="btn-secondary" id="reassignBtn" style="flex:none;padding:6px 10px;margin-left:6px">🔁 Reassign</button>
+    </div>
+    <div class="drawer-list" id="drawerList"></div>
+    <div class="row">
+      <button class="btn-secondary" id="pRandomBtn">🎲 Random Drawer</button>
+    </div>
+
+    <canvas id="pCanvas" class="preview-canvas" width="400" height="300"></canvas>
+    <div class="row">
+      <button class="btn-secondary" id="pCopyBtn">📋 Copy Picture</button>
+    </div>
+    <div class="stale-note" id="pCopyStatus"></div>
+
+    <div class="qtext" style="margin-top:10px">Custom word (optional)</div>
+    <input type="text" id="pCustomWordInput" maxlength="60" placeholder="Type a word/phrase, or leave blank for a random one">
+
+    <div class="row">
+      <button class="btn-primary" id="pStartBtn">▶ Start Round</button>
+      <button class="btn-secondary" id="pRevealBtn">👁 Reveal Word</button>
+    </div>
+    <div class="row">
+      <button class="btn-primary" id="pNextBtn">⏭ Next Round</button>
+      <button class="btn-danger" id="pResetBtn">⚠ Reset Pictionary</button>
+    </div>
+  </div>
+
+  <!-- Diminishing Words panel -->
+  <div class="panel hidden" id="versefadeHostPanel">
+    <div class="qtext">Paste a Bible verse</div>
+    <textarea id="verseInput" rows="4" placeholder="Paste the verse text here, then tap Set Verse"></textarea>
+    <div class="row">
+      <button class="btn-primary" id="setVerseBtn">📖 Set Verse</button>
+    </div>
+
+    <div class="status" style="margin-top:10px">Tap a word to select it, then tap "Erase Selected Word." Tap an already-erased word to bring it back.</div>
+    <div class="verse-display" id="verseDisplay"><span class="status">No verse set yet.</span></div>
+
+    <div class="row">
+      <button class="btn-primary" id="eraseWordBtn">🫥 Erase Selected Word</button>
+    </div>
+    <div class="row">
+      <button class="btn-secondary" id="restoreAllBtn">🔄 Restore All Words</button>
+      <button class="btn-danger" id="clearVerseBtn">⚠ Clear Verse</button>
+    </div>
+  </div>
+
+<script>
+async function poll() {
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    const s = await res.json();
+    render(s);
+  } catch (e) {}
+  setTimeout(poll, 700);
+}
+
+const GAME_EMOJI = { trivia: '🧠', pictionary: '🎨', versefade: '📖' };
+
+function render(s) {
+  document.getElementById('gamePicker').innerHTML = s.games.map(g => `
+    <button class="game-card ${s.activeGame === g.id ? 'active' : ''}" onclick="chooseGame('${g.id}')">${GAME_EMOJI[g.id] || '🎮'} ${g.name}</button>
+  `).join('') + `<button class="game-card ${s.activeGame === null ? 'active' : ''}" onclick="chooseGame(null)">⏸ None</button>`;
+
+  document.getElementById('triviaHostPanel').classList.toggle('hidden', s.activeGame !== 'trivia');
+  document.getElementById('triviaScorePanel').classList.toggle('hidden', s.activeGame !== 'trivia');
+  document.getElementById('pictionaryHostPanel').classList.toggle('hidden', s.activeGame !== 'pictionary');
+  document.getElementById('versefadeHostPanel').classList.toggle('hidden', s.activeGame !== 'versefade');
+
+  renderTrivia(s.trivia);
+  renderPictionary(s.pictionary);
+  if (s.activeGame === 'versefade') renderVersefade();
+
+  document.getElementById('urls').innerHTML =
+    `<div class="linkbox">TV: ${location.origin}/tv</div>
+     <div class="linkbox">Kids join: ${location.origin}/play</div>`;
+}
+
+function chooseGame(game) {
+  fetch('/api/host', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'setActiveGame', game })
+  });
+}
+
+async function hostAction(game, action, extra) {
+  await fetch('/api/host', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ game, action }, extra || {}))
+  });
+}
+
+function award(game, team, points) {
+  hostAction(game, 'award', { team, points });
+}
+
+// ---------- Trivia panel ----------
+function renderTrivia(t) {
+  document.getElementById('qnum').textContent = t.questionIndex + 1;
+  document.getElementById('qtotal').textContent = t.totalQuestions;
+  document.getElementById('phase').textContent = t.phase;
+  document.getElementById('pcount').textContent = t.playerCount;
+  if (t.phase === 'question' && t.timerEndsAt) {
+    document.getElementById('timer').textContent = Math.max(0, Math.ceil((t.timerEndsAt - Date.now()) / 1000)) + 's';
+  } else {
+    document.getElementById('timer').textContent = '-';
+  }
+  document.getElementById('qtext').textContent = t.question ? t.question.text : (t.phase === 'lobby' ? 'Press Start when everyone has joined.' : 'Game finished!');
+  document.getElementById('qans').textContent = t.answer ? ('Answer: ' + t.answer) : '';
+
+  document.getElementById('buzzlist').innerHTML = t.buzzQueue.map((b, i) =>
+    `<div class="buzzrow ${i === 0 ? 'first' : ''}">#${i + 1} ${b.name} (${b.team})</div>`
+  ).join('');
+
+  document.getElementById('teamgrid').innerHTML = t.teams.map(team => `
+    <div class="teamcard" style="background:${team.color}22; border:2px solid ${team.color}">
+      <div>${team.name}</div>
+      <div class="score">${t.scores[team.id]}</div>
+      <div class="adjust">
+        <button onclick="award('trivia','${team.id}', -5)">-5</button>
+        <button onclick="award('trivia','${team.id}', 5)">+5</button>
+        <button onclick="award('trivia','${team.id}', 10)">+10</button>
+      </div>
+    </div>
+  `).join('');
+
+  const banner = document.getElementById('triviaResumeBanner');
+  banner.classList.toggle('hidden', t.remainingMs == null);
+  if (t.remainingMs != null) {
+    document.getElementById('triviaResumeText').textContent = `⏸ Timer paused (${Math.ceil(t.remainingMs / 1000)}s left)`;
+  }
+}
+
+document.getElementById('startBtn').onclick = () => hostAction('trivia', 'start');
+document.getElementById('nextBtn').onclick = () => hostAction('trivia', 'next');
+document.getElementById('revealBtn').onclick = () => hostAction('trivia', 'reveal');
+document.getElementById('resetBuzzBtn').onclick = () => hostAction('trivia', 'resetBuzz');
+document.getElementById('resetGameBtn').onclick = () => {
+  if (confirm('This clears ALL trivia players and scores. Continue?')) hostAction('trivia', 'resetGame');
+};
+document.getElementById('triviaResumeBtn').onclick = () => hostAction('trivia', 'resumeTimer');
+
+// ---------- Pictionary panel ----------
+let pKnownRoundId = null;
+let pLastSeq = 0;
+let pStrokePaths = {};
+const pCanvas = document.getElementById('pCanvas');
+const pCtx = pCanvas.getContext('2d');
+
+function clearPictionaryCanvas() {
+  pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+  pStrokePaths = {};
+}
+
+async function pollPictionaryStrokes() {
+  try {
+    const res = await fetch(`/api/pictionary/strokes?since=${pLastSeq}`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.roundId !== pKnownRoundId) {
+      pKnownRoundId = data.roundId;
+      pLastSeq = 0;
+      clearPictionaryCanvas();
+      setTimeout(pollPictionaryStrokes, 0);
+      return;
+    }
+    if (data.truncated) clearPictionaryCanvas();
+    for (const e of data.events) {
+      if (e.end) { delete pStrokePaths[e.strokeId]; continue; }
+      const x = e.x * pCanvas.width;
+      const y = e.y * pCanvas.height;
+      const last = pStrokePaths[e.strokeId];
+      pCtx.strokeStyle = '#1a2a6c';
+      pCtx.lineWidth = 4;
+      pCtx.lineCap = 'round';
+      pCtx.beginPath();
+      pCtx.moveTo(last ? last.x : x, last ? last.y : y);
+      pCtx.lineTo(x, y);
+      pCtx.stroke();
+      pStrokePaths[e.strokeId] = { x, y };
+    }
+    pLastSeq = data.latestSeq;
+  } catch (e) {}
+  setTimeout(pollPictionaryStrokes, 700);
+}
+pollPictionaryStrokes();
+
+function showCopyStatus(text) {
+  const el = document.getElementById('pCopyStatus');
+  el.textContent = text;
+  clearTimeout(showCopyStatus._t);
+  showCopyStatus._t = setTimeout(() => { el.textContent = ''; }, 6000);
+}
+
+document.getElementById('pCopyBtn').onclick = () => {
+  // Composite onto a white background first - pCanvas itself is transparent
+  // where nothing's been drawn, which would paste as transparent (odd in a
+  // white document) rather than a clean white background.
+  const tmp = document.createElement('canvas');
+  tmp.width = pCanvas.width;
+  tmp.height = pCanvas.height;
+  const tctx = tmp.getContext('2d');
+  tctx.fillStyle = '#ffffff';
+  tctx.fillRect(0, 0, tmp.width, tmp.height);
+  tctx.drawImage(pCanvas, 0, 0);
+
+  if (!navigator.clipboard || !window.ClipboardItem) {
+    // Browsers only expose the clipboard-image API on a "secure context" -
+    // localhost counts, but a plain LAN IP address (the form printed in the
+    // terminal and used for the TV/phones) does not, even from this same
+    // laptop. This is overwhelmingly the actual cause when this message
+    // shows up in an otherwise-modern browser.
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (!isLocalhost) {
+      showCopyStatus(`⚠ Copying pictures needs a secure connection. If you're running the server on THIS laptop, open the host panel at http://localhost:${location.port}/host instead of ${location.host} and try again.`);
+    } else {
+      showCopyStatus('⚠ This browser does not support copying images to the clipboard.');
+    }
+    return;
+  }
+
+  // navigator.clipboard.write() must be called synchronously from the click
+  // handler - awaiting toBlob() first (it's callback/async) loses that direct
+  // user-gesture association in some browsers and silently fails. The fix is
+  // to call write() immediately with a Promise<Blob> inside the ClipboardItem
+  // (not an already-resolved Blob) - this is the documented pattern for
+  // async image generation with the Clipboard API.
+  const blobPromise = new Promise((resolve, reject) => {
+    tmp.toBlob(blob => blob ? resolve(blob) : reject(new Error('canvas.toBlob returned null')), 'image/png');
+  });
+
+  const attemptCopy = () => navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })]);
+
+  attemptCopy()
+    .then(() => showCopyStatus('✅ Picture copied! Paste it into your document with Ctrl+V.'))
+    .catch(e => {
+      // Chrome throws this if the page briefly wasn't the focused window at
+      // the exact moment of the call (e.g. right after clicking a button
+      // that was near a tab/window edge) - reclaiming focus and retrying
+      // once resolves it without bothering the host with an error.
+      if (e.name === 'NotAllowedError' && /focus/i.test(e.message || '')) {
+        window.focus();
+        attemptCopy()
+          .then(() => showCopyStatus('✅ Picture copied! Paste it into your document with Ctrl+V.'))
+          .catch(e2 => {
+            console.error('Copy Picture failed:', e2);
+            showCopyStatus(`⚠ Couldn't copy to clipboard (${e2.name || 'Error'}: ${e2.message || e2}). Click on this page first, then try the button again.`);
+          });
+        return;
+      }
+      console.error('Copy Picture failed:', e);
+      showCopyStatus(`⚠ Couldn't copy to clipboard (${e.name || 'Error'}: ${e.message || e}). Try clicking the button again.`);
+    });
+};
+
+let pWordCache = { roundId: null, word: null };
+
+async function refreshHostWord(roundId) {
+  if (pWordCache.roundId === roundId) return;
+  pWordCache.roundId = roundId;
+  try {
+    const res = await fetch('/api/host/pictionary-word', { cache: 'no-store' });
+    const data = await res.json();
+    pWordCache.word = data.word || null;
+    document.getElementById('pWord').textContent = pWordCache.word ? ('Word: ' + pWordCache.word) : '';
+  } catch (e) {}
+}
+
+function renderPictionary(p) {
+  document.getElementById('pPhase').textContent = p.phase;
+  document.getElementById('pCount').textContent = p.playerCount;
+  document.getElementById('pCategory').textContent = p.category || '-';
+  document.getElementById('pDifficulty').textContent = p.difficulty ? `(${p.difficulty})` : '';
+  if (p.phase === 'lobby') {
+    document.getElementById('pWord').textContent = '';
+  } else {
+    refreshHostWord(p.roundId);
+  }
+
+  document.getElementById('pStaleNote').textContent =
+    (p.phase === 'round' && p.lastStrokeAt && (Date.now() - p.lastStrokeAt > 8000))
+      ? `⚠ No new strokes for ${Math.floor((Date.now() - p.lastStrokeAt) / 1000)}s - drawer may have dropped, consider reassigning.`
+      : '';
+
+  document.getElementById('pDrawerName').textContent = p.drawerName || 'None yet';
+
+  document.getElementById('drawerList').innerHTML = p.players.map(pl => `
+    <button class="drawer-chip ${pl.id === p.drawerId ? 'current' : ''} ${pl.hasDrawn ? 'done' : ''}"
+      onclick="assignDrawer('${pl.id}')">${pl.hasDrawn ? '✓ ' : ''}${pl.name}</button>
+  `).join('') || '<span class="status">No one has joined Pictionary yet.</span>';
+}
+
+function assignDrawer(playerId) {
+  hostAction('pictionary', 'assignDrawer', { playerId });
+}
+
+document.getElementById('pRandomBtn').onclick = () => hostAction('pictionary', 'randomDrawer');
+document.getElementById('reassignBtn').onclick = () => hostAction('pictionary', 'randomDrawer');
+document.getElementById('pStartBtn').onclick = () => {
+  const input = document.getElementById('pCustomWordInput');
+  const word = input.value.trim();
+  hostAction('pictionary', 'startRound', { word });
+  input.value = '';
+};
+document.getElementById('pRevealBtn').onclick = () => hostAction('pictionary', 'reveal');
+document.getElementById('pNextBtn').onclick = () => hostAction('pictionary', 'nextRound');
+document.getElementById('pResetBtn').onclick = () => {
+  if (confirm('This clears ALL Pictionary players. Continue?')) hostAction('pictionary', 'resetGame');
+};
+
+// ---------- Diminishing Words panel ----------
+let verseTokens = []; // full unredacted tokens, fetched from the host-only endpoint
+let selectedTokenIndex = null;
+
+async function refreshVerseTokens() {
+  try {
+    const res = await fetch('/api/host/versefade-verse', { cache: 'no-store' });
+    const data = await res.json();
+    verseTokens = data.tokens || [];
+  } catch (e) {}
+}
+
+function renderVerseDisplay() {
+  const el = document.getElementById('verseDisplay');
+  if (!verseTokens.length) {
+    el.innerHTML = '<span class="status">No verse set yet.</span>';
+    return;
+  }
+  el.innerHTML = verseTokens.map((t, i) => {
+    if (!t.isWord) return t.text.replace(/\n/g, '<br>');
+    const classes = ['verse-token'];
+    if (t.erased) classes.push('erased');
+    if (i === selectedTokenIndex) classes.push('selected');
+    return `<span class="${classes.join(' ')}" onclick="onVerseTokenClick(${i})">${t.text}</span>`;
+  }).join('');
+}
+
+function onVerseTokenClick(i) {
+  const t = verseTokens[i];
+  if (!t || !t.isWord) return;
+  if (t.erased) {
+    // Restoring is low-risk (it's the "safe" direction), so a single tap does it.
+    hostAction('versefade', 'restoreWord', { index: i });
+  } else {
+    // Erasing needs a deliberate second tap on "Erase Selected Word" - tapping
+    // the same word again deselects it.
+    selectedTokenIndex = (selectedTokenIndex === i) ? null : i;
+    renderVerseDisplay();
+  }
+}
+
+async function renderVersefade() {
+  await refreshVerseTokens();
+  renderVerseDisplay();
+}
+
+document.getElementById('setVerseBtn').onclick = () => {
+  const text = document.getElementById('verseInput').value;
+  if (!text.trim()) return;
+  selectedTokenIndex = null;
+  hostAction('versefade', 'setVerse', { text });
+};
+
+document.getElementById('eraseWordBtn').onclick = () => {
+  if (selectedTokenIndex == null) { alert('Tap a word first to select it.'); return; }
+  hostAction('versefade', 'eraseWord', { index: selectedTokenIndex });
+  selectedTokenIndex = null;
+};
+
+document.getElementById('restoreAllBtn').onclick = () => hostAction('versefade', 'restoreAllWords');
+document.getElementById('clearVerseBtn').onclick = () => {
+  if (confirm('This clears the current verse completely. Continue?')) {
+    hostAction('versefade', 'resetGame');
+    document.getElementById('verseInput').value = '';
+    selectedTokenIndex = null;
+  }
+};
+
+poll();
+</script>
+</body>
+</html>
