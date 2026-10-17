@@ -188,6 +188,10 @@
     <div class="row">
       <button class="btn-danger" id="resetGameBtn">⚠ Reset Whole Game</button>
     </div>
+    <div class="row">
+      <input type="number" id="gotoInput" min="1" placeholder="Question #" style="flex:1;margin-bottom:0">
+      <button class="btn-secondary" id="gotoBtn">⤴ Jump to Question</button>
+    </div>
   </div>
   <div class="panel hidden" id="triviaScorePanel">
     <div class="qtext">Scores (tap +/- to award points)</div>
@@ -345,6 +349,13 @@ document.getElementById('resetGameBtn').onclick = () => {
   if (confirm('This clears ALL trivia players and scores. Continue?')) hostAction('trivia', 'resetGame');
 };
 document.getElementById('triviaResumeBtn').onclick = () => hostAction('trivia', 'resumeTimer');
+document.getElementById('gotoBtn').onclick = () => {
+  const input = document.getElementById('gotoInput');
+  const n = parseInt(input.value, 10);
+  if (!n || n < 1) { alert('Enter a valid question number.'); return; }
+  hostAction('trivia', 'goto', { questionNumber: n });
+  input.value = '';
+};
 
 // ---------- Pictionary panel ----------
 let pKnownRoundId = null;

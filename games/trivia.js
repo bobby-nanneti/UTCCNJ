@@ -103,6 +103,15 @@ function handleAction(state, action, body, ctx) {
     state.message = '';
     state.phase = state.questionIndex >= QUESTIONS.length ? 'gameover' : 'question';
     if (state.phase === 'question') startTimer(state, ctx); else stopTimer(state);
+  } else if (action === 'goto') {
+    const target = Math.trunc(Number(body.questionNumber)) - 1;
+    if (Number.isInteger(target) && target >= 0 && target < QUESTIONS.length) {
+      state.questionIndex = target;
+      state.buzzQueue = [];
+      state.message = '';
+      state.phase = 'question';
+      startTimer(state, ctx);
+    }
   } else if (action === 'reveal') {
     state.phase = 'revealed';
     stopTimer(state);

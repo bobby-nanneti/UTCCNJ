@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Illumination Station Jeopardy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tilt+Warp&family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night: #101a33;
+    --night2: #0a1024;
+    --lantern: #ffc857;
+    --lantern-glow: #ffe3a3;
+    --ember: #ff7b54;
+    --brass: #c9a15a;
+    --cream: #fff8e7;
+    --track: #3a4b6b;
+    --track-dark: #263252;
+    --used: #212d4d;
+    --green: #6bbf7b;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 120% 60% at 50% -10%, #1c2a52 0%, transparent 60%),
+      linear-gradient(180deg, var(--night) 0%, var(--night2) 100%);
+    color: var(--cream);
+    font-family: 'Baloo 2', sans-serif;
+    overflow-x:hidden;
+  }
+
+  #stars{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+  }
+  .star{
+    position:absolute; width:2px; height:2px; background:#fff; border-radius:50%;
+    opacity:.6; animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{ opacity:.15; transform:scale(1); }
+    50%{ opacity:.9; transform:scale(1.6); }
+  }
+
+  .wrap{ position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:20px 16px 60px; }
+
+  /* ---------- HEADER ---------- */
+  header{ text-align:center; padding:18px 0 10px; }
+  .sign{
+    display:inline-flex; align-items:center; gap:14px;
+    padding: 14px 30px;
+  }
+  .lantern-icon{ width:46px; height:64px; flex:none; }
+  .lantern-icon .swing{ transform-origin: 50% 6px; animation: swing 3.2s ease-in-out infinite; }
+  .lantern-icon.right .swing{ animation-delay: -1.6s; }
+  @keyframes swing{
+    0%,100%{ transform: rotate(-6deg); }
+    50%{ transform: rotate(6deg); }
+  }
+  h1{
+    font-family:'Tilt Warp', sans-serif;
+    font-size: clamp(28px, 5vw, 52px);
+    margin:0;
+    color: var(--lantern);
+    text-shadow: 0 0 18px rgba(255,200,87,.55), 0 0 2px rgba(0,0,0,.4);
+    letter-spacing: .5px;
+    line-height:1.05;
+  }
+  .tagline{
+    margin-top:6px; font-weight:600; letter-spacing:2px; text-transform:uppercase;
+    font-size:13px; color: var(--brass);
+  }
+
+  .rail{
+    height:14px; margin: 18px auto 26px; max-width: 900px;
+    background-image: repeating-linear-gradient(90deg, var(--track) 0 10px, transparent 10px 26px);
+    border-top:3px solid var(--track-dark); border-bottom:3px solid var(--track-dark);
+    opacity:.8;
+  }
+
+  /* ---------- SETUP PANEL ---------- */
+  .panel{
+    background: linear-gradient(180deg, #16213f, #101830);
+    border: 2px solid var(--track);
+    border-radius: 16px;
+    padding: 26px 24px;
+    max-width: 640px;
+    margin: 10px auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .panel h2{
+    font-family:'Tilt Warp', sans-serif; color: var(--lantern-glow); margin:0 0 4px;
+    font-size: 22px; text-align:center;
+  }
+  .panel p.sub{ text-align:center; color:#b9c3e0; margin:0 0 20px; font-size:14px; }
+  .team-rows{ display:flex; flex-direction:column; gap:10px; }
+  .team-row{ display:flex; align-items:center; gap:10px; }
+  .team-row .dot{ width:14px; height:14px; border-radius:50%; flex:none; box-shadow:0 0 8px currentColor; }
+  .team-row input{
+    flex:1; padding:10px 12px; border-radius:10px; border:2px solid var(--track);
+    background:#0d1428; color:var(--cream); font-family:'Baloo 2'; font-weight:600; font-size:15px;
+  }
+  .team-row input:focus{ outline:2px solid var(--lantern); outline-offset:1px; border-color:var(--lantern); }
+  .team-count{ display:flex; justify-content:center; gap:8px; margin: 4px 0 18px; }
+  .team-count button{
+    padding:6px 14px; border-radius:20px; border:2px solid var(--track); background:#0d1428;
+    color:var(--cream); font-family:'Baloo 2'; font-weight:700; cursor:pointer;
+  }
+  .team-count button.active{ background: var(--lantern); color:#1a1200; border-color:var(--lantern); }
+
+  .big-btn{
+    display:block; margin:22px auto 0; padding:14px 30px; border:none; border-radius:14px;
+    background: linear-gradient(180deg, var(--lantern-glow), var(--lantern));
+    color:#241a00; font-family:'Tilt Warp'; font-size:18px; cursor:pointer;
+    box-shadow: 0 6px 0 #a8791f, 0 10px 20px rgba(0,0,0,.4);
+    transition: transform .08s ease;
+  }
+  .big-btn:active{ transform: translateY(4px); box-shadow: 0 2px 0 #a8791f, 0 4px 10px rgba(0,0,0,.4); }
+  .big-btn:focus-visible{ outline:3px solid #fff; outline-offset:3px; }
+
+  /* ---------- SCOREBOARD ---------- */
+  #scoreboard{
+    display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin: 4px 0 22px;
+  }
+  .score-card{
+    background: linear-gradient(180deg,#141e3c,#0d1428);
+    border: 2px solid var(--track); border-radius: 12px;
+    padding: 10px 18px; min-width:150px; text-align:center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+  }
+  .score-card .name{ font-weight:700; font-size:14px; color: var(--brass); text-transform:uppercase; letter-spacing:1px; }
+  .score-card .amt{
+    font-family:'Tilt Warp'; font-size: 30px; color: var(--lantern);
+    text-shadow: 0 0 10px rgba(255,200,87,.4);
+  }
+
+  /* ---------- BOARD ---------- */
+  #board-wrap{ overflow-x:auto; padding-bottom:8px; }
+  #board{
+    display:grid;
+    grid-template-columns: repeat(6, minmax(140px,1fr));
+    gap: 8px;
+    min-width: 900px;
+  }
+  .cat-header{
+    background: linear-gradient(180deg, #2a3a63, #1a2748);
+    border: 2px solid var(--brass);
+    border-radius: 10px 10px 4px 4px;
+    padding: 12px 8px;
+    text-align:center;
+    font-family:'Tilt Warp';
+    font-size: 15px;
+    color: var(--cream);
+    min-height: 62px;
+    display:flex; align-items:center; justify-content:center;
+    line-height:1.2;
+    text-shadow: 0 2px 4px rgba(0,0,0,.5);
+  }
+  .tile{
+    position:relative;
+    aspect-ratio: 1.3 / 1;
+    border-radius: 10px;
+    border: 2px solid var(--brass);
+    background: radial-gradient(ellipse at 50% 35%, #2b3a68 0%, #17213f 75%);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-family:'Tilt Warp';
+    font-size: clamp(20px, 2.6vw, 30px);
+    color: var(--lantern);
+    text-shadow: 0 0 12px rgba(255,200,87,.55);
+    transition: transform .12s ease, box-shadow .2s ease;
+    box-shadow: 0 0 0 rgba(255,200,87,0);
+  }
+  .tile::before{
+    content:''; position:absolute; inset:5px; border-radius:7px;
+    border: 1px solid rgba(255,255,255,.08);
+    pointer-events:none;
+  }
+  .tile:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 0 22px rgba(255,200,87,.5);
+    background: radial-gradient(ellipse at 50% 35%, #37477c 0%, #1a2748 75%);
+  }
+  .tile:focus-visible{ outline:3px solid var(--lantern); outline-offset:2px; }
+  .tile.used{
+    cursor:default;
+    background: var(--used);
+    color: #4a5678;
+    text-shadow:none;
+    border-color: var(--track);
+  }
+  .tile.used:hover{ transform:none; box-shadow:none; }
+  .tile.used::after{
+    content:'✦'; position:absolute; font-size:22px; color:#3a4568;
+  }
+  .tile.daily{ }
+
+  /* ---------- MODAL ---------- */
+  #overlay{
+    position:fixed; inset:0; background: rgba(6,9,20,.85); backdrop-filter: blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:16px;
+  }
+  #overlay.open{ display:flex; }
+  #modal{
+    width:100%; max-width: 640px;
+    background: linear-gradient(180deg, #1a2748, #101830);
+    border: 3px solid var(--lantern);
+    border-radius: 20px;
+    padding: 30px 26px;
+    box-shadow: 0 0 60px rgba(255,200,87,.25), 0 20px 50px rgba(0,0,0,.6);
+    text-align:center;
+    max-height:88vh; overflow-y:auto;
+  }
+  #modal .cat-tag{
+    font-family:'Tilt Warp'; color:var(--brass); font-size:14px; letter-spacing:1px;
+    text-transform:uppercase; margin-bottom:6px;
+  }
+  #modal .val-tag{
+    font-family:'Tilt Warp'; color:var(--lantern); font-size:22px; margin-bottom:18px;
+    text-shadow:0 0 10px rgba(255,200,87,.5);
+  }
+  #modal .qtext{
+    font-size: clamp(18px,3vw,24px); font-weight:700; line-height:1.4; margin-bottom:22px;
+  }
+  #answer-box{
+    display:none; margin: 0 0 22px; padding:16px; border-radius:12px;
+    background: rgba(107,191,123,.12); border:2px solid var(--green);
+  }
+  #answer-box.show{ display:block; }
+  #answer-box .lbl{ font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--green); font-weight:700; margin-bottom:4px; }
+  #answer-box .atext{ font-size: clamp(16px,2.6vw,20px); font-weight:700; color:#eafff0; }
+
+  #reveal-btn{
+    padding:12px 26px; border:none; border-radius:12px; cursor:pointer;
+    background: linear-gradient(180deg, var(--lantern-glow), var(--lantern));
+    color:#241a00; font-family:'Tilt Warp'; font-size:16px;
+    box-shadow: 0 5px 0 #a8791f;
+  }
+  #reveal-btn:active{ transform:translateY(3px); box-shadow:0 2px 0 #a8791f; }
+
+  #award-section{ display:none; margin-top:10px; }
+  #award-section.show{ display:block; }
+  #award-section .prompt{ font-size:13px; color:#b9c3e0; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+  .award-btns{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .award-btn{
+    padding:10px 16px; border-radius:10px; border:2px solid var(--brass); cursor:pointer;
+    background:#0d1428; color:var(--cream); font-family:'Baloo 2'; font-weight:700; font-size:14px;
+  }
+  .award-btn:hover{ background: var(--brass); color:#1a1200; }
+  .skip-btn{
+    margin-top:12px; padding:8px 14px; border-radius:10px; border:2px solid var(--track);
+    background:transparent; color:#8a97bd; font-family:'Baloo 2'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .skip-btn:hover{ color:var(--cream); border-color:var(--cream); }
+
+  /* ---------- FOOTER CONTROLS ---------- */
+  #controls{ text-align:center; margin-top: 26px; }
+  #reset-btn{
+    padding:10px 20px; border-radius:12px; border:2px solid var(--track); background:transparent;
+    color:#8a97bd; font-family:'Baloo 2'; font-weight:700; cursor:pointer; font-size:13px;
+  }
+  #reset-btn:hover{ color:var(--cream); border-color:var(--cream); }
+
+  /* ---------- FINAL SCREEN ---------- */
+  #final-screen{ display:none; text-align:center; }
+  #final-screen.show{ display:block; }
+  #final-screen h2{ font-family:'Tilt Warp'; font-size:clamp(26px,5vw,42px); color:var(--lantern); text-shadow:0 0 20px rgba(255,200,87,.6); }
+  #final-screen .winner{ font-size:20px; margin: 10px 0 26px; color:var(--cream); font-weight:700; }
+
+  [hidden]{ display:none !important; }
+
+  @media (prefers-reduced-motion: reduce){
+    .lantern-icon .swing, .star{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div class="wrap">
+
+  <header>
+    <div class="sign">
+      <svg class="lantern-icon" viewBox="0 0 40 60"><g class="swing"><line x1="20" y1="0" x2="20" y2="8" stroke="#c9a15a" stroke-width="2"/><rect x="10" y="8" width="20" height="5" rx="2" fill="#c9a15a"/><path d="M12 13 h16 l-3 32 a5 5 0 0 1 -10 0 z" fill="#ffc857" opacity="0.9"/><ellipse cx="20" cy="27" rx="6" ry="9" fill="#fff3c4"/><rect x="9" y="43" width="22" height="5" rx="2" fill="#c9a15a"/></g></svg>
+      <div>
+        <h1>Illumination Station</h1>
+        <div class="tagline">Bible Trivia Express</div>
+      </div>
+      <svg class="lantern-icon right" viewBox="0 0 40 60"><g class="swing"><line x1="20" y1="0" x2="20" y2="8" stroke="#c9a15a" stroke-width="2"/><rect x="10" y="8" width="20" height="5" rx="2" fill="#c9a15a"/><path d="M12 13 h16 l-3 32 a5 5 0 0 1 -10 0 z" fill="#ffc857" opacity="0.9"/><ellipse cx="20" cy="27" rx="6" ry="9" fill="#fff3c4"/><rect x="9" y="43" width="22" height="5" rx="2" fill="#c9a15a"/></g></svg>
+    </div>
+  </header>
+
+  <div class="rail"></div>
+
+  <!-- SETUP -->
+  <div class="panel" id="setup-panel">
+    <h2>All Aboard!</h2>
+    <p class="sub">How many crews are riding the rails today?</p>
+    <div class="team-count" id="team-count">
+      <button data-n="2" class="active">2 Teams</button>
+      <button data-n="3">3 Teams</button>
+      <button data-n="4">4 Teams</button>
+    </div>
+    <div class="team-rows" id="team-rows"></div>
+    <button class="big-btn" id="start-btn">Light the Lanterns &amp; Start!</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-area" hidden>
+    <div id="scoreboard"></div>
+    <div id="board-wrap">
+      <div id="board"></div>
+    </div>
+    <div id="controls">
+      <button id="reset-btn">↺ Start a New Game</button>
+    </div>
+  </div>
+
+  <!-- FINAL -->
+  <div class="panel" id="final-screen">
+    <h2>🚂 End of the Line! 🚂</h2>
+    <div class="winner" id="winner-text"></div>
+    <div id="final-scores" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-bottom:20px;"></div>
+    <button class="big-btn" id="play-again-btn">Ride Again</button>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="overlay">
+  <div id="modal" role="dialog" aria-modal="true">
+    <div class="cat-tag" id="m-cat"></div>
+    <div class="val-tag" id="m-val"></div>
+    <div class="qtext" id="m-question"></div>
+
+    <button id="reveal-btn">Reveal Answer</button>
+
+    <div id="answer-box">
+      <div class="lbl">Answer</div>
+      <div class="atext" id="m-answer"></div>
+    </div>
+
+    <div id="award-section">
+      <div class="prompt">Who lit the lantern? Award the points:</div>
+      <div class="award-btns" id="award-btns"></div>
+      <button class="skip-btn" id="skip-btn">No one got it — skip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const CATEGORIES = [
+  {
+    name: "Bible Heroes",
+    qs: [
+      { v:100, q:"Who built a big boat to save his family and the animals from a great flood?", a:"Noah" },
+      { v:200, q:"Which strong man's power was in his uncut hair?", a:"Samson" },
+      { v:300, q:"Who was thrown into a den of lions for praying to God three times a day?", a:"Daniel" },
+      { v:400, q:"What was Abraham's original name before God changed it?", a:"Abram" },
+      { v:500, q:"Which judge of Israel defeated the Midianites with just 300 men armed with trumpets and jars?", a:"Gideon" },
+    ]
+  },
+  {
+    name: "Miracles & Wonders",
+    qs: [
+      { v:100, q:"What did Jesus turn water into at a wedding in Cana?", a:"Wine" },
+      { v:200, q:"How many days was Jonah inside the great fish?", a:"Three days" },
+      { v:300, q:"What sea did God part so the Israelites could cross on dry ground?", a:"The Red Sea" },
+      { v:400, q:"Besides Lazarus, name one other person Jesus raised from the dead (a young girl or a widow's son).", a:"Jairus' daughter, or the widow of Nain's son" },
+      { v:500, q:"What plague was the tenth and final plague God sent on Egypt before Pharaoh let the Israelites go?", a:"The death of the firstborn" },
+    ]
+  },
+  {
+    name: "Let There Be Light!",
+    qs: [
+      { v:100, q:"On which day of creation did God make light?", a:"Day 1 (the first day)" },
+      { v:200, q:"What lit the way for the Israelites in the desert at night?", a:"A pillar of fire" },
+      { v:300, q:"Jesus said, \"I am the Light of the ___.\" Fill in the blank!", a:"World" },
+      { v:400, q:"In the Sermon on the Mount, Jesus told his followers they are the light of the world and shouldn't hide it — what everyday object did he say people don't hide it under?", a:"A bowl / basket" },
+      { v:500, q:"In Revelation, John says the new heaven won't need the sun or moon — what two things does he say will be its light instead?", a:"The glory of God, and the Lamb" },
+    ]
+  },
+  {
+    name: "Who Said It?",
+    qs: [
+      { v:100, q:"Who said, \"Let there be light\"?", a:"God" },
+      { v:200, q:"Who said, \"Follow me,\" to his disciples?", a:"Jesus" },
+      { v:300, q:"Who said, \"Here I am, send me,\" when God called him to be a prophet?", a:"Isaiah" },
+      { v:400, q:"Who said, \"Whither thou goest, I will go,\" refusing to leave her mother-in-law?", a:"Ruth (speaking to Naomi)" },
+      { v:500, q:"Who said, \"Am I my brother's keeper?\" after God asked where his brother was?", a:"Cain" },
+    ]
+  },
+  {
+    name: "Books & Places",
+    qs: [
+      { v:100, q:"What is the very first book of the Bible called?", a:"Genesis" },
+      { v:200, q:"In what small town was Jesus born?", a:"Bethlehem" },
+      { v:300, q:"What is the very last book of the Bible called?", a:"Revelation" },
+      { v:400, q:"What is the shortest book in the Old Testament?", a:"Obadiah" },
+      { v:500, q:"Paul wrote letters to churches in several cities — name the city whose church he described as being torn by quarrels over who they followed (Paul, Apollos, or Cephas).", a:"Corinth (1 Corinthians)" },
+    ]
+  },
+  {
+    name: "Jesus' Parables",
+    qs: [
+      { v:100, q:"In the parable of the lost sheep, how many sheep did the shepherd leave behind to find the one that was lost?", a:"Ninety-nine (99)" },
+      { v:200, q:"In the parable of the wise and foolish builders, what did the wise man build his house on?", a:"The rock" },
+      { v:300, q:"In the parable of the Good Samaritan, who stopped to help the injured traveler?", a:"The Samaritan" },
+      { v:400, q:"In the parable of the sower, the seed fell on four different types of ground — name at least two of them.", a:"The path, rocky ground, thorns, and good soil (any two)" },
+      { v:500, q:"In the parable of the ten virgins (bridesmaids), what was the key difference between the five wise and five foolish ones?", a:"The wise ones brought extra oil for their lamps; the foolish ones didn't" },
+    ]
+  },
+];
+
+/* ---------------- STATE ---------------- */
+let teams = [];
+let usedTiles = new Set();
+let currentTile = null;
+
+/* ---------------- STARFIELD ---------------- */
+(function makeStars(){
+  const box = document.getElementById('stars');
+  for(let i=0;i<70;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = Math.random()*100+'%';
+    s.style.animationDelay = (Math.random()*3)+'s';
+    s.style.animationDuration = (2+Math.random()*3)+'s';
+    box.appendChild(s);
+  }
+})();
+
+/* ---------------- SETUP PANEL ---------------- */
+const teamColors = ['#ffc857','#6bbf7b','#7fb6ff','#ff7b54'];
+let teamCount = 2;
+
+function renderTeamRows(){
+  const box = document.getElementById('team-rows');
+  box.innerHTML = '';
+  for(let i=0;i<teamCount;i++){
+    const row = document.createElement('div');
+    row.className='team-row';
+    row.innerHTML = `<span class="dot" style="color:${teamColors[i]};background:${teamColors[i]}"></span>
+      <input type="text" maxlength="18" value="Crew ${i+1}" data-idx="${i}">`;
+    box.appendChild(row);
+  }
+}
+renderTeamRows();
+
+document.getElementById('team-count').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  teamCount = parseInt(btn.dataset.n);
+  [...document.querySelectorAll('#team-count button')].forEach(b=>b.classList.toggle('active', b===btn));
+  renderTeamRows();
+});
+
+document.getElementById('start-btn').addEventListener('click', ()=>{
+  const inputs = [...document.querySelectorAll('#team-rows input')];
+  teams = inputs.map((inp, i)=>({
+    name: inp.value.trim() || `Crew ${i+1}`,
+    score: 0,
+    color: teamColors[i]
+  }));
+  document.getElementById('setup-panel').hidden = true;
+  document.getElementById('game-area').hidden = false;
+  document.getElementById('final-screen').classList.remove('show');
+  usedTiles.clear();
+  renderScoreboard();
+  renderBoard();
+});
+
+/* ---------------- SCOREBOARD ---------------- */
+function renderScoreboard(){
+  const box = document.getElementById('scoreboard');
+  box.innerHTML = '';
+  teams.forEach((t)=>{
+    const card = document.createElement('div');
+    card.className='score-card';
+    card.style.borderColor = t.color;
+    card.innerHTML = `<div class="name" style="color:${t.color}">${escapeHTML(t.name)}</div><div class="amt">${t.score}</div>`;
+    box.appendChild(card);
+  });
+}
+
+/* ---------------- BOARD ---------------- */
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  CATEGORIES.forEach(cat=>{
+    const h = document.createElement('div');
+    h.className='cat-header';
+    h.textContent = cat.name;
+    board.appendChild(h);
+  });
+  for(let row=0; row<5; row++){
+    CATEGORIES.forEach((cat, ci)=>{
+      const item = cat.qs[row];
+      const tile = document.createElement('button');
+      const key = ci+'-'+row;
+      tile.className='tile';
+      tile.setAttribute('aria-label', cat.name+' for '+item.v);
+      tile.textContent = usedTiles.has(key) ? '' : item.v;
+      if(usedTiles.has(key)) tile.classList.add('used');
+      tile.addEventListener('click', ()=> openQuestion(ci, row, key));
+      board.appendChild(tile);
+    });
+  }
+}
+
+/* ---------------- MODAL / QUESTION FLOW ---------------- */
+function openQuestion(ci, row, key){
+  if(usedTiles.has(key)) return;
+  const cat = CATEGORIES[ci];
+  const item = cat.qs[row];
+  currentTile = { ci, row, key, value:item.v };
+
+  document.getElementById('m-cat').textContent = cat.name;
+  document.getElementById('m-val').textContent = item.v + ' points';
+  document.getElementById('m-question').textContent = item.q;
+  document.getElementById('m-answer').textContent = item.a;
+  document.getElementById('answer-box').classList.remove('show');
+  document.getElementById('award-section').classList.remove('show');
+  document.getElementById('reveal-btn').hidden = false;
+
+  const awardBox = document.getElementById('award-btns');
+  awardBox.innerHTML = '';
+  teams.forEach((t, ti)=>{
+    const b = document.createElement('button');
+    b.className='award-btn';
+    b.style.borderColor = t.color;
+    b.textContent = `${t.name} +${item.v}`;
+    b.addEventListener('click', ()=> awardPoints(ti));
+    awardBox.appendChild(b);
+  });
+
+  document.getElementById('overlay').classList.add('open');
+}
+
+document.getElementById('reveal-btn').addEventListener('click', ()=>{
+  document.getElementById('answer-box').classList.add('show');
+  document.getElementById('award-section').classList.add('show');
+  document.getElementById('reveal-btn').hidden = true;
+});
+
+function awardPoints(teamIndex){
+  teams[teamIndex].score += currentTile.value;
+  finishTile();
+}
+document.getElementById('skip-btn').addEventListener('click', finishTile);
+
+function finishTile(){
+  usedTiles.add(currentTile.key);
+  document.getElementById('overlay').classList.remove('open');
+  renderScoreboard();
+  renderBoard();
+  currentTile = null;
+  if(usedTiles.size === CATEGORIES.length*5){
+    setTimeout(showFinal, 400);
+  }
+}
+
+// close modal on backdrop click (without scoring) — only if answer not yet revealed to avoid accidental skip
+document.getElementById('overlay').addEventListener('click', (e)=>{
+  if(e.target.id==='overlay'){
+    document.getElementById('overlay').classList.remove('open');
+    currentTile = null;
+  }
+});
+
+/* ---------------- FINAL SCREEN ---------------- */
+function showFinal(){
+  document.getElementById('game-area').hidden = true;
+  const final = document.getElementById('final-screen');
+  final.classList.add('show');
+  const sorted = [...teams].sort((a,b)=>b.score-a.score);
+  const top = sorted[0];
+  const tie = sorted.filter(t=>t.score===top.score).length > 1;
+  document.getElementById('winner-text').textContent = tie
+    ? `It's a tie at ${top.score} points! Great riding, everyone!`
+    : `${top.name} pulls into the station first with ${top.score} points! 🎉`;
+  const box = document.getElementById('final-scores');
+  box.innerHTML = '';
+  sorted.forEach(t=>{
+    const card = document.createElement('div');
+    card.className='score-card';
+    card.style.borderColor = t.color;
+    card.innerHTML = `<div class="name" style="color:${t.color}">${escapeHTML(t.name)}</div><div class="amt">${t.score}</div>`;
+    box.appendChild(card);
+  });
+}
+
+document.getElementById('play-again-btn').addEventListener('click', resetGame);
+document.getElementById('reset-btn').addEventListener('click', ()=>{
+  if(confirm('Start a new game? Current scores will be cleared.')) resetGame();
+});
+
+function resetGame(){
+  document.getElementById('final-screen').classList.remove('show');
+  document.getElementById('game-area').hidden = true;
+  document.getElementById('setup-panel').hidden = false;
+  usedTiles.clear();
+  teams = [];
+}
+
+function escapeHTML(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+</script>
+</body>
+</html>
